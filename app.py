@@ -1,5 +1,5 @@
 import os
-import io  # Добавлено для работы с буфером памяти при экспорте в Excel
+import io 
 from datetime import datetime
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -7,8 +7,8 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-# --- Инициализация Firebase (Умная версия для Cloud и Локалки) ---
-import json  # <--- Добавь эту строку в самые верхние импорты, если её там нет!
+# --- Инициализация Firebase
+import json 
 
 if not firebase_admin._apps:
     # 1. Пытаемся взять ключ из Secrets (для Streamlit Cloud)
@@ -33,8 +33,6 @@ if not firebase_admin._apps:
 db = firestore.client()
 
 st.set_page_config(page_title="Мониторинг: Чат-боты и ИИ", layout="wide")
-
-# Жирные дизайнерские разделительные линии неонового цвета
 THICK_LINE = "<hr style='border: 2px solid #6366f1; margin: 25px 0; opacity: 1;'>"
 
 mode = st.sidebar.radio("Выберите режим:", ["Заполнить опрос", "Панель аналитики (Преподаватель)"])
@@ -196,7 +194,7 @@ elif mode == "Панель аналитики (Преподаватель)":
         current_time = datetime.now().strftime("%Y%m%d_%H%M")
 
         with exp_col1:
-            # Конвертация всей базы в CSV (в кодировке utf-8-sig, чтобы Excel читал русский язык без кракозябр)
+            # Конвертация всей базы в CSV (в кодировке utf-8-sig, чтобы Excel читал русский язык)
             csv_buffer = df_russian.to_csv(index=False).encode('utf-8-sig')
             st.download_button(
                 label="🟢 Скачать базу в CSV формате",
@@ -250,7 +248,7 @@ elif mode == "Панель аналитики (Преподаватель)":
         with c2:
             fig2 = px.histogram(
                 df, x="convenience", nbins=10,
-                title="Распределение оценок юзабилити интерфейсов",
+                title="Распределение оценок удобства интерфейсов",
                 labels={"convenience": "Оценка удобства"},
                 color_discrete_sequence=['#f472b6']
             )
