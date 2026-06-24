@@ -7,26 +7,28 @@ import plotly.express as px
 import streamlit as st
 
 # Инициализация подключения к базе данных Firebase
-if not firebase_admin._apps:
-    key_path = os.getenv("FIREBASE_KEY", "serviceAccountKey.json")
+# --- Инициализация Firebase (Умная версия для Cloud и Локалки) ---
+import json # <--- Добавь эту строку в самые верхние импорты, если её там нет!
 
-    # 1. Первоочередная проверка локального файла ключа для разработки на ПК
-    if os.path.exists(key_path):
-        cred = credentials.Certificate(key_path)
-        firebase_admin.initialize_app(cred)
+if not firebase_admin._apps:
+    # 1. Пытаемся взять ключ из Secrets (для Streamlit Cloud)
+    key_content = os.getenv("FIREBASE_KEY")
+
+    if key_content:
+        # Если ключ есть в настройках облака, превращаем текст в объект
+        cred_dict = json.loads(key_content)
+        cred = credentials.Certificate(cred_dict)
+
+    # 2. Если ключа в облаке нет, пытаемся найти файл (для локального запуска)
+    elif os.path.exists("serviceAccountKey.json"):
+        cred = credentials.Certificate("serviceAccountKey.json")
+
+    # 3. Если ничего не нашли — выдаем ошибку
     else:
-        # 2. Переход к чтению секретов облака при деплое на удаленный сервер
-        try:
-            if "firebase_key" in st.secrets:
-                key_dict = dict(st.secrets["firebase_key"])
-                cred = credentials.Certificate(key_dict)
-                firebase_admin.initialize_app(cred)
-            else:
-                st.error("Ошибка: Данные авторизации Firebase не найдены.")
-                st.stop()
-        except Exception:
-            st.error("Ошибка: Локальный файл не найден, а механизм st.secrets не инициализирован.")
-            st.stop()
+        st.error("❌ Ошибка: Ключ Firebase не найден ни в Secrets, ни в файле!")
+        st.stop()
+
+    firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
