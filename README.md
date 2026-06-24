@@ -49,16 +49,16 @@ streamlit run app.py
 
 Скопируй туда весь текст из своего файла serviceAccountKey.json, оформив его вот так:
 
-Ini, TOML
+**Ini, TOML
 [FIREBASE_KEY] = '''
 {type = "service_account"
 project_id = "твой-id-проекта"
 private_key_id = "..."
 private_key = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 client_email = "..."
-# ... и все остальные строчки из твоего файла
+###' ... и все остальные строчки из твоего файла
 }'''
-Нажми Save, и сайт в облаке заработает.
+Нажми Save, и сайт в облаке заработает.**
 
 🔧 Что делать, если база данных выдает ошибки:
 Если пишет Ошибку 403 (Cloud Firestore API... disabled): Зайди в консоль Firebase, нажми слева на Build -> Firestore Database и нажми кнопку Create database. На этапе правил выбери Start in test mode (Тестовый режим).
