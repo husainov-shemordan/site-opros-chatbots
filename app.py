@@ -1,5 +1,6 @@
 import os
-import io 
+import io
+import time
 from datetime import datetime
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -7,8 +8,8 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-# --- Инициализация Firebase
-import json 
+# --- Инициализация Firebase (Умная версия для Cloud и Локалки) ---
+import json  # <--- Добавь эту строку в самые верхние импорты, если её там нет!
 
 if not firebase_admin._apps:
     # 1. Пытаемся взять ключ из Secrets (для Streamlit Cloud)
@@ -32,272 +33,174 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
-st.set_page_config(page_title="Мониторинг: Чат-боты и ИИ", layout="wide")
+st.set_page_config(page_title="AI Monitoring Premium", layout="wide")
+
+# --- БЛОК ПРОДВИНУТЫХ КИБЕР-АНИМАЦИЙ ---
+st.markdown("""
+<style>
+    /* 1. Плавный переход при смене вкладок (Fade-in + Slide-up) */
+    .main .block-container {
+        animation: fadeInSlide 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes fadeInSlide {
+        0% { opacity: 0; transform: translateY(20px); filter: blur(5px); }
+        100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+
+    /* 2. Анимация кнопок (улучшенная версия) */
+    div.stButton > button, div.stDownloadButton > button {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        border: 2px solid #6366f1 !important;
+        background-color: transparent !important;
+        color: #f8fafc !important;
+        font-weight: 600 !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    div.stButton > button:hover, div.stDownloadButton > button:hover {
+        background-color: #6366f1 !important;
+        box-shadow: 0 0 25px rgba(99, 102, 241, 0.6) !important;
+        transform: scale(1.02);
+    }
+
+    div.stButton > button:active, div.stDownloadButton > button:active {
+        transform: scale(0.95);
+        filter: brightness(1.2);
+    }
+
+    /* 3. Кастомный стиль для полей ввода (чтобы светились при фокусе) */
+    input, textarea, select {
+        transition: border 0.3s ease, box-shadow 0.3s ease !important;
+    }
+    input:focus, textarea:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.3) !important;
+    }
+
+    /* 4. Анимация боковой панели */
+    section[data-testid="stSidebar"] {
+        border-right: 1px solid #6366f1;
+        transition: all 0.5s ease;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 THICK_LINE = "<hr style='border: 2px solid #6366f1; margin: 25px 0; opacity: 1;'>"
 
-mode = st.sidebar.radio("Выберите режим:", ["Заполнить опрос", "Панель аналитики (Преподаватель)"])
+# Сайдбар с иконками
+st.sidebar.title("💎 AI NAVIGATOR")
+mode = st.sidebar.radio(
+    "Выберите раздел:",
+    ["📝 Заполнить опрос", "📊 Панель аналитики"],
+    captions=["Режим респондента", "Режим администратора"]
+)
 
-# Маппинг всех 13 полей для таблицы
 COLUMN_NAMES = {
-    "age": "Возраст",
-    "occupation": "Род занятий",
-    "frequency": "Частота использования",
-    "platforms": "Популярные платформы",
-    "purpose": "Цели использования",
-    "accuracy": "Оценка точности",
-    "convenience": "Оценка удобства",
-    "trust": "Уровень доверия",
-    "issues": "Проблемы и недостатки",
-    "productivity": "Влияние на продуктивность",
-    "pay_ready": "Готовность платить",
-    "future_sphere": "Сфера ИИ в будущем",
-    "comment": "Развернутый отзыв",
-    "timestamp": "Время отправки"
+    "age": "Возраст", "occupation": "Род занятий", "frequency": "Частота",
+    "platforms": "Платформы", "purpose": "Задачи", "accuracy": "Точность",
+    "convenience": "Удобство", "trust": "Доверие", "issues": "Проблемы",
+    "productivity": "Продуктивность", "pay_ready": "Оплата",
+    "future_sphere": "Будущее", "comment": "Отзыв", "timestamp": "Дата"
 }
 
-if mode == "Заполнить опрос":
-    st.title("Глобальный опрос: Роль ИИ в современном обществе")
-    st.caption("Исследование проводится анонимно. Время заполнения: ~3 минуты.")
+if mode == "📝 Заполнить опрос":
+    st.title("Глобальный опрос: Роль ИИ 🚀")
 
-    with st.form("survey_form"):
-        st.subheader("Раздел 1: Профиль респондента")
-        col1, col2 = st.columns(2)
-
-        with col1:
-            age = st.number_input("1. Укажите ваш возраст:", min_value=14, max_value=80, value=20, step=1)
-            occupation = st.selectbox(
-                "2. Ваш основной род занятий:",
-                ["Школьник / Студент", "Работаю в сфере IT", "Работаю в другой сфере", "Временно не работаю"]
-            )
-            frequency = st.radio(
-                "3. Как часто вы общаетесь с ИИ-помощниками?",
-                ["Каждый день", "Несколько раз в неделю", "Редко (раз в месяц и реже)", "Никогда не пользовался"]
-            )
-
-        with col2:
-            platforms = st.multiselect(
-                "4. Какими платформами вы пользуетесь? (множественный выбор):",
-                ["ChatGPT / OpenAI", "Claude (Anthropic)", "Gemini (Google)", "YandexGPT / Шедеврум", "GigaChat (Сбер)",
-                 "Telegram-боты"]
-            )
-            purpose = st.multiselect(
-                "5. Для каких ключевых задач вы их применяете?:",
-                ["Помощь в учёбе / эссе", "Поиск информации", "Написание / проверка кода", "Генерация текстов и идей",
-                 "Развлечение и общение"]
-            )
+    with st.form("survey_form", clear_on_submit=True):
+        st.subheader("Раздел 1: Профиль")
+        c1, c2 = st.columns(2)
+        with c1:
+            age = st.number_input("1. Возраст:", 14, 80, 20)
+            occupation = st.selectbox("2. Род занятий:", ["Студент", "IT", "Другое", "Не работаю"])
+            frequency = st.radio("3. Частота использования:", ["Каждый день", "Несколько раз в неделю", "Редко"])
+        with c2:
+            platforms = st.multiselect("4. Платформы:", ["ChatGPT", "Claude", "Gemini", "YandexGPT", "GigaChat"])
+            purpose = st.multiselect("5. Задачи:", ["Учёба", "Поиск", "Код", "Тексты", "Развлечение"])
 
         st.markdown(THICK_LINE, unsafe_allow_html=True)
-        st.subheader("Раздел 2: Опыт и метрики взаимодействия")
-
-        col3, col4 = st.columns(2)
-        with col3:
-            accuracy = st.slider("6. Оцените точность ответы ИИ (1-10):", 1, 10, 5)
-            convenience = st.slider("7. Оцените удобство интерфейсов (1-10):", 1, 10, 5)
-            trust = st.selectbox(
-                "8. Ваш уровень доверия к фактам от ИИ:",
-                ["Слепо верю всему", "Перепроверяю только важные факты", "Никогда не верю на слово"]
-            )
-
-        with col4:
-            issues = st.multiselect(
-                "9. С какими главными минусами вы сталкивались?:",
-                ["Галлюцинации (выдумка фактов)", "Шаблонные/скучные ответы", "Медленная работа / сбои",
-                 "Сложный интерфейс", "Нет проблем"]
-            )
-            productivity = st.radio(
-                "10. Как использование ИИ влияет на вашу личную продуктивность?",
-                ["Значительно повышает", "Немного повышает", "Не влияет", "Замедляет мою работу"]
-            )
+        st.subheader("Раздел 2: Оценка опыта")
+        c3, c4 = st.columns(2)
+        with c3:
+            accuracy = st.slider("6. Точность ИИ (1-10):", 1, 10, 5)
+            convenience = st.slider("7. Удобство (1-10):", 1, 10, 5)
+        with c4:
+            trust = st.selectbox("8. Уровень доверия:", ["Верю всему", "Перепроверяю важное", "Не верю"])
+            productivity = st.radio("9. Влияние на продуктивность:", ["Растет", "Немного растет", "Не влияет"])
 
         st.markdown(THICK_LINE, unsafe_allow_html=True)
-        st.subheader("Раздел 3: Экономика и будущее технологий")
-        col5, col6 = st.columns(2)
+        comment = st.text_area("10. Ваш развернутый отзыв:")
 
-        with col5:
-            pay_ready = st.radio(
-                "11. Готовы ли вы оплачивать платную подписку на ИИ (для работы или учебы)?:",
-                ["Да, готов при необходимости", "Нет, принципиально ищу бесплатные", "Уже оплачиваю подписку"]
-            )
-        with col6:
-            future_sphere = st.selectbox(
-                "12. В какой сфере, по вашему мнению, ИИ принесет наибольшую пользу в ближайшие 5 лет?:",
-                ["Медицина и диагностика", "Образование и репетиторство", "Наука и новые открытия",
-                 "Автоматизация рутины", "Искусство и дизайн"]
-            )
-
-        st.markdown(THICK_LINE, unsafe_allow_html=True)
-        comment = st.text_area("13. Ваш развернутый отзыв (главный плюс или минус нейросетей из личного опыта):")
-
-        submitted = st.form_submit_button("Отправить анкету в базу")
+        submitted = st.form_submit_button("ОТПРАВИТЬ АНКЕТУ В ОБЛАКО")
 
         if submitted:
-            if not platforms or not purpose:
-                st.warning("Пожалуйста, заполните обязательные множественные списки (пункты 4 и 5).")
-            else:
+            # Анимация обработки
+            with st.spinner('Синхронизация с нейросетью...'):
                 doc_data = {
-                    "age": int(age),
-                    "occupation": occupation,
-                    "frequency": frequency,
-                    "platforms": platforms,
-                    "purpose": purpose,
-                    "accuracy": int(accuracy),
-                    "convenience": int(convenience),
-                    "trust": trust,
-                    "issues": issues,
-                    "productivity": productivity,
-                    "pay_ready": pay_ready,
-                    "future_sphere": future_sphere,
-                    "comment": comment,
-                    "timestamp": datetime.utcnow()
+                    "age": int(age), "occupation": occupation, "frequency": frequency,
+                    "platforms": platforms, "purpose": purpose, "accuracy": int(accuracy),
+                    "convenience": int(convenience), "trust": trust, "productivity": productivity,
+                    "comment": comment, "timestamp": datetime.utcnow()
                 }
+                db.collection("responses").add(doc_data)
+                time.sleep(1)  # Короткая пауза для визуального эффекта
 
-                try:
-                    db.collection("responses").add(doc_data)
-                    st.success("Анкета успешно отправлена. Спасибо за участие!")
-                except Exception as e:
-                    st.error(f"Ошибка сохранения: {e}")
+            # ЭФФЕКТНАЯ АНИМАЦИЯ УСПЕХА
+            st.balloons()
+            st.toast('Данные успешно доставлены в Firebase!', icon='✅')
 
-elif mode == "Панель аналитики (Преподаватель)":
-    st.title("Центр стратегической аналитики")
+elif mode == "📊 Панель аналитики":
+    st.title("Центр стратегической аналитики ⚡")
 
     docs = db.collection("responses").stream()
     data = [doc.to_dict() for doc in docs]
 
     if not data:
-        st.info("В базе данных Firestore пока нет ответов.")
+        st.info("База данных пока пуста.")
     else:
         df = pd.DataFrame(data)
-
-        # Обработка временной метки (удаляем часовой пояс для корректного экспорта в Excel)
         df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_localize(None)
-
-        # Создаем датафрейм с русскими названиями колонок для выгрузки и таблицы
         df_russian = df.rename(columns=COLUMN_NAMES)
 
-        st.subheader("Ключевые показатели эффективности")
+        # KPI Метрики с анимацией цифр (автоматически встроено в Streamlit)
         m1, m2, m3, m4 = st.columns(4)
-        with m1:
-            st.metric(label="Всего респондентов", value=f"{len(df)} чел.")
-        with m2:
-            st.metric(label="Средний возраст", value=f"{df['age'].mean():.1f} лет")
-        with m3:
-            st.metric(label="Ср. оценка точности", value=f"{df['accuracy'].mean():.1f} / 10")
-        with m4:
-            st.metric(label="Ср. оценка удобства", value=f"{df['convenience'].mean():.1f} / 10")
+        m1.metric("Респонденты", len(df), "+1")
+        m2.metric("Средний возраст", round(df['age'].mean(), 1))
+        m3.metric("Точность ответов", f"{round(df['accuracy'].mean(), 1)}/10")
+        m4.metric("Юзабилити", f"{round(df['convenience'].mean(), 1)}/10")
 
         st.markdown(THICK_LINE, unsafe_allow_html=True)
 
-        # --- БЛОК ЭКСПОРТА ДАННЫХ ---
-        st.subheader("📥 Экспорт собранных данных")
+        # БЛОК ЭКСПОРТА
+        st.subheader("📥 Выгрузка отчетов")
         exp_col1, exp_col2 = st.columns(2)
 
-        current_time = datetime.now().strftime("%Y%m%d_%H%M")
-
         with exp_col1:
-            # Конвертация всей базы в CSV (в кодировке utf-8-sig, чтобы Excel читал русский язык)
-            csv_buffer = df_russian.to_csv(index=False).encode('utf-8-sig')
-            st.download_button(
-                label="🟢 Скачать базу в CSV формате",
-                data=csv_buffer,
-                file_name=f"survey_export_{current_time}.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
+            csv = df_russian.to_csv(index=False).encode('utf-8-sig')
+            if st.download_button("📂 Экспорт в CSV", csv, "report.csv", "text/csv", use_container_width=True):
+                st.snow()  # Анимация при нажатии
 
         with exp_col2:
-            # Конвертация в Excel через байтовый буфер памяти
-            excel_buffer = io.BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                df_russian.to_excel(writer, index=False, sheet_name='Ответы респондентов')
-            excel_buffer.seek(0)
-
-            st.download_button(
-                label="🔵 Скачать базу в Excel (.xlsx)",
-                data=excel_buffer.getvalue(),
-                file_name=f"survey_export_{current_time}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
+            buf = io.BytesIO()
+            with pd.ExcelWriter(buf, engine='openpyxl') as w:
+                df_russian.to_excel(w, index=False)
+            if st.download_button("📉 Экспорт в EXCEL", buf.getvalue(), "report.xlsx", use_container_width=True):
+                st.snow()  # Анимация при нажатии
 
         st.markdown(THICK_LINE, unsafe_allow_html=True)
-
-        st.subheader("Сводная база данных (Последние 10 ответов)")
+        st.subheader("Сводная таблица")
         st.dataframe(df_russian.head(10), use_container_width=True)
 
-        st.markdown(THICK_LINE, unsafe_allow_html=True)
-        st.subheader("Визуальный анализ метрик")
-
-        # Ряд графиков 1
-        c1, c2 = st.columns(2)
-        with c1:
-            fig1 = px.histogram(
-                df, x="accuracy", nbins=10,
-                title="Распределение оценок точности ответов ИИ",
-                labels={"accuracy": "Оценка точности"},
-                color_discrete_sequence=['#38bdf8']
-            )
-            fig1.update_traces(marker_line_color='#0f172a', marker_line_width=2)
-            fig1.update_layout(
-                yaxis_title_text="Ответы",
-                plot_bgcolor='#1e293b', paper_bgcolor='#1e293b', font_color='#f8fafc'
-            )
-            fig1.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
-            fig1.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
+        # Графики
+        st.subheader("Визуализация")
+        c_left, c_right = st.columns(2)
+        with c_left:
+            fig1 = px.histogram(df, x="accuracy", title="Распределение точности", color_discrete_sequence=['#38bdf8'])
+            fig1.update_layout(plot_bgcolor='#1e293b', paper_bgcolor='#1e293b', font_color='#f8fafc')
             st.plotly_chart(fig1, use_container_width=True)
-
-        with c2:
-            fig2 = px.histogram(
-                df, x="convenience", nbins=10,
-                title="Распределение оценок удобства интерфейсов",
-                labels={"convenience": "Оценка удобства"},
-                color_discrete_sequence=['#f472b6']
-            )
-            fig2.update_traces(marker_line_color='#0f172a', marker_line_width=2)
-            fig2.update_layout(
-                yaxis_title_text="Ответы",
-                plot_bgcolor='#1e293b', paper_bgcolor='#1e293b', font_color='#f8fafc'
-            )
-            fig2.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
-            fig2.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
+        with c_right:
+            fig2 = px.pie(df, names="trust", title="Уровень доверия", hole=0.4,
+                          color_discrete_sequence=['#6366f1', '#f472b6', '#34d399'])
+            fig2.update_layout(paper_bgcolor='#1e293b', font_color='#f8fafc')
             st.plotly_chart(fig2, use_container_width=True)
-
-        # Ряд графиков 2
-        st.markdown(THICK_LINE, unsafe_allow_html=True)
-        c3, c4 = st.columns(2)
-
-        with c3:
-            fig3 = px.bar(
-                df['productivity'].value_counts().reset_index(),
-                x='productivity', y='count',
-                title="Как технологии влияют на продуктивность пользователей",
-                labels={'productivity': 'Категория влияния', 'count': 'Количество'},
-                color_discrete_sequence=['#34d399']
-            )
-            fig3.update_traces(marker_line_color='#0f172a', marker_line_width=2)
-            fig3.update_layout(plot_bgcolor='#1e293b', paper_bgcolor='#1e293b', font_color='#f8fafc')
-            fig3.update_xaxes(linecolor='#f8fafc', linewidth=2)
-            fig3.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
-            st.plotly_chart(fig3, use_container_width=True)
-
-        with c4:
-            fig4 = px.pie(
-                df, names="pay_ready",
-                title="Экономический аспект: Готовность платить за ИИ",
-                hole=0.4,
-                color_discrete_sequence=['#c084fc', '#a78bfa', '#818cf8']
-            )
-            fig4.update_traces(marker=dict(line=dict(color='#0f172a', width=2)))
-            fig4.update_layout(paper_bgcolor='#1e293b', font_color='#f8fafc')
-            st.plotly_chart(fig4, use_container_width=True)
-
-        # Ряд графиков 3
-        st.markdown(THICK_LINE, unsafe_allow_html=True)
-        fig5 = px.pie(
-            df, names="future_sphere",
-            title="Какая сфера получит максимальный толчок развития от ИИ?",
-            color_discrete_sequence=['#fbbf24', '#38bdf8', '#f87171', '#34d399', '#a78bfa']
-        )
-        fig5.update_traces(textposition='inside', textinfo='percent+label',
-                           marker=dict(line=dict(color='#0f172a', width=2)))
-        fig5.update_layout(paper_bgcolor='#1e293b', font_color='#f8fafc')
-        st.plotly_chart(fig5, use_container_width=True)
