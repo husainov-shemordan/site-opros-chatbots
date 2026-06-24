@@ -11,7 +11,7 @@
 1. **Принимать ответы:** Интерактивная анкета на 13 вопросов (возраст, какие ИИ используешь, готов ли платить, мешает или помогает в работе и т.д.).
 2. **Считать статистику:** На панели преподавателя в реальном времени обновляются KPI-метрики (сколько всего человек прошло опрос, средний возраст, средние оценки).
 3. **Показывать графики:** 5 штук (красивые диаграммы и гистограммы про продуктивность, деньги и будущее ИИ).
-4. **Выгружать данные:** Кнопки для скачивания всей базы в один клик в форматы **Excel** и **CSV** .
+4. **Выгружать данные:** Кнопки для скачивания всей базы в один клик в форматы **Excel** и **CSV** (сделано так, чтобы русский текст не превращался в кракозябры).
 
 ---
 
@@ -30,37 +30,45 @@
 2. **Установи библиотеки** через терминал (командную строку):
    ```bash
    pip install -r requirements.txt
-Добавь ключ базы данных: возьми свой скачанный из Firebase JSON-файл с ключами, переименуй его точно в serviceAccountKey.json и закинь в папку к проекту.
+   ```
+3. **Добавь ключ базы данных:** возьми свой скачанный из Firebase JSON-файл с ключами, переименуй его точно в `serviceAccountKey.json` и закинь в папку к проекту.
+4. **Запусти сайт** командой:
+   ```bash
+   streamlit run app.py
+   ```
+   Сайт сам откроется в браузере.
 
-Запусти сайт командой:
+---
 
-Bash
-streamlit run app.py
-Сайт сам откроется в браузере.
+## ☁️ Как задеплоить в Streamlit Cloud
 
-☁️ Как задеплоить в Streamlit Cloud
-Когда будешь загружать проект на GitHub, заливай только папку .streamlit, app.py и requirements.txt. Файл serviceAccountKey.json на GitHub кидать нельзя.
+Когда будешь загружать проект на GitHub, заливай только папку `.streamlit`, `app.py` и `requirements.txt`. Файл `serviceAccountKey.json` на GitHub кидать **нельзя**.
 
-Вместо этого:
+Вместо этого настроим секреты в облаке:
+1. Зайди в настройки своего запущенного приложения на сайте Streamlit Cloud.
+2. Открой вкладку **Secrets**.
+3. Скопируй туда данные из своего файла `serviceAccountKey.json`, переведя их в формат TOML вот так (просто заполни своими значениями вместо многоточий):
 
-Зайди в настройки своего приложения на сайте Streamlit Cloud.
-
-Открой вкладку Secrets.
-
-Скопируй туда весь текст из своего файла serviceAccountKey.json, оформив его вот так:
-
-**Ini, TOML
-[FIREBASE_KEY] = '''
-{type = "service_account"
+```toml
+[firebase_key]
+type = "service_account"
 project_id = "твой-id-проекта"
 private_key_id = "..."
 private_key = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 client_email = "..."
-###' ... и все остальные строчки из твоего файла
-}'''
-Нажми Save, и сайт в облаке заработает.**
+client_id = "..."
+auth_uri = "[https://accounts.google.com/o/oauth2/auth](https://accounts.google.com/o/oauth2/auth)"
+token_uri = "[https://oauth2.googleapis.com/token](https://oauth2.googleapis.com/token)"
+auth_provider_x509_cert_url = "[https://www.googleapis.com/oauth2/v1/certs](https://www.googleapis.com/oauth2/v1/certs)"
+client_x509_cert_url = "..."
+universe_domain = "googleapis.com"
+```
 
-🔧 Что делать, если база данных выдает ошибки:
-Если пишет Ошибку 403 (Cloud Firestore API... disabled): Зайди в консоль Firebase, нажми слева на Build -> Firestore Database и нажми кнопку Create database. На этапе правил выбери Start in test mode (Тестовый режим).
+4. Нажми **Save**, и сайт в облаке заработает.
 
-Если пишет Ошибку 404 (database (default) does not exist): Перейди по ссылке из текста ошибки в консоль Google Cloud. Выбери режим Cloud Firestore в Native Mode и подтверди создание базы данных по умолчанию с ID (default). Подожди 2 минуты, пока сервера настроятся.
+---
+
+## 🔧 Что делать, если база данных выдает ошибки:
+
+* **Если пишет Ошибку 403 (Cloud Firestore API... disabled):** Зайди в консоль Firebase, нажми слева на **Build -> Firestore Database** и нажми кнопку **Create database**. На этапе правил выбери **Start in test mode** (Тестовый режим).
+* **Если пишет Ошибку 404 (database (default) does not exist):** Перейди по ссылке из текста ошибки в консоль Google Cloud. Выбери режим **Cloud Firestore в Native Mode** и подтверди создание базы данных по умолчанию с ID `(default)`. Подождите 2 минуты, пока сервера настроятся.
