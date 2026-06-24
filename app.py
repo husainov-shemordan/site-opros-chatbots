@@ -5,7 +5,7 @@ from firebase_admin import credentials, firestore
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-import json
+import json  # <--- Добавь эту строку в самые верхние импорты, если её там нет!
 
 if not firebase_admin._apps:
     # 1. Пытаемся взять ключ из Secrets (для Streamlit Cloud)
@@ -31,12 +31,12 @@ db = firestore.client()
 
 st.set_page_config(page_title="Мониторинг: Чат-боты и ИИ", layout="wide")
 
-# Жирные дизайнерские разделительные линии
-THICK_LINE = "<hr style='border: 2px solid #4f46e5; margin: 25px 0; opacity: 1;'>"
+# Жирные дизайнерские разделительные линии неонового цвета
+THICK_LINE = "<hr style='border: 2px solid #6366f1; margin: 25px 0; opacity: 1;'>"
 
 mode = st.sidebar.radio("Выберите режим:", ["Заполнить опрос", "Панель аналитики (Преподаватель)"])
 
-# Маппинг всех 13 полей для красивого отображения в таблице
+# Маппинг всех 13 полей для таблицы
 COLUMN_NAMES = {
     "age": "Возраст",
     "occupation": "Род занятий",
@@ -90,7 +90,7 @@ if mode == "Заполнить опрос":
 
         col3, col4 = st.columns(2)
         with col3:
-            accuracy = st.slider("6. Оцените точность ответов ИИ (1-10):", 1, 10, 5)
+            accuracy = st.slider("6. Оцените точность ответы ИИ (1-10):", 1, 10, 5)
             convenience = st.slider("7. Оцените удобство интерфейсов (1-10):", 1, 10, 5)
             trust = st.selectbox(
                 "8. Ваш уровень доверия к фактам от ИИ:",
@@ -169,7 +169,6 @@ elif mode == "Панель аналитики (Преподаватель)":
         df["timestamp"] = pd.to_datetime(df["timestamp"])
         df_russian = df.rename(columns=COLUMN_NAMES)
 
-        # ЭЛЕМЕНТ СТИЛЯ: Бизнес-метрики (KPI) на самом верху панели
         st.subheader("Ключевые показатели эффективности")
         m1, m2, m3, m4 = st.columns(4)
         with m1:
@@ -189,19 +188,22 @@ elif mode == "Панель аналитики (Преподаватель)":
         st.markdown(THICK_LINE, unsafe_allow_html=True)
         st.subheader("Визуальный анализ метрик")
 
-        # Ряд графиков 1: Гистограммы оценок (Индиго и Насыщенный Розовый)
+        # Ряд графиков 1: Неоновый Голубой и Неоновый Розовый на темном фоне
         c1, c2 = st.columns(2)
         with c1:
             fig1 = px.histogram(
                 df, x="accuracy", nbins=10,
                 title="Распределение оценок точности ответов ИИ",
                 labels={"accuracy": "Оценка точности"},
-                color_discrete_sequence=['#4f46e5']
+                color_discrete_sequence=['#38bdf8']  # Кибер-голубой
             )
             fig1.update_traces(marker_line_color='#0f172a', marker_line_width=2)
-            fig1.update_layout(yaxis_title_text="Ответы", plot_bgcolor='white', paper_bgcolor='white')
-            fig1.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#e2e8f0', linecolor='#0f172a', linewidth=2)
-            fig1.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#e2e8f0', linecolor='#0f172a', linewidth=2)
+            fig1.update_layout(
+                yaxis_title_text="Ответы",
+                plot_bgcolor='#1e293b', paper_bgcolor='#1e293b', font_color='#f8fafc'
+            )
+            fig1.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
+            fig1.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
             st.plotly_chart(fig1, use_container_width=True)
 
         with c2:
@@ -209,15 +211,18 @@ elif mode == "Панель аналитики (Преподаватель)":
                 df, x="convenience", nbins=10,
                 title="Распределение оценок юзабилити интерфейсов",
                 labels={"convenience": "Оценка удобства"},
-                color_discrete_sequence=['#ec4899']
+                color_discrete_sequence=['#f472b6']  # Неоново-розовый
             )
             fig2.update_traces(marker_line_color='#0f172a', marker_line_width=2)
-            fig2.update_layout(yaxis_title_text="Ответы", plot_bgcolor='white', paper_bgcolor='white')
-            fig2.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#e2e8f0', linecolor='#0f172a', linewidth=2)
-            fig2.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#e2e8f0', linecolor='#0f172a', linewidth=2)
+            fig2.update_layout(
+                yaxis_title_text="Ответы",
+                plot_bgcolor='#1e293b', paper_bgcolor='#1e293b', font_color='#f8fafc'
+            )
+            fig2.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
+            fig2.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
             st.plotly_chart(fig2, use_container_width=True)
 
-        # Ряд графиков 2: Влияние на продуктивность и Готовность платить (Изумрудный и Фиолетовый)
+        # Ряд графиков 2: Ярко-изумрудный бар-чарт и фиолетовый донат-чарт
         st.markdown(THICK_LINE, unsafe_allow_html=True)
         c3, c4 = st.columns(2)
 
@@ -227,12 +232,12 @@ elif mode == "Панель аналитики (Преподаватель)":
                 x='productivity', y='count',
                 title="Как технологии влияют на продуктивность пользователей",
                 labels={'productivity': 'Категория влияния', 'count': 'Количество'},
-                color_discrete_sequence=['#10b981']
+                color_discrete_sequence=['#34d399']  # Мятно-изумрудный
             )
             fig3.update_traces(marker_line_color='#0f172a', marker_line_width=2)
-            fig3.update_layout(plot_bgcolor='white', paper_bgcolor='white')
-            fig3.update_xaxes(linecolor='#0f172a', linewidth=2)
-            fig3.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#e2e8f0', linecolor='#0f172a', linewidth=2)
+            fig3.update_layout(plot_bgcolor='#1e293b', paper_bgcolor='#1e293b', font_color='#f8fafc')
+            fig3.update_xaxes(linecolor='#f8fafc', linewidth=2)
+            fig3.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
             st.plotly_chart(fig3, use_container_width=True)
 
         with c4:
@@ -240,20 +245,20 @@ elif mode == "Панель аналитики (Преподаватель)":
                 df, names="pay_ready",
                 title="Экономический аспект: Готовность платить за ИИ",
                 hole=0.4,
-                color_discrete_sequence=['#8b5cf6', '#a78bfa', '#ddd6fe']
+                color_discrete_sequence=['#c084fc', '#a78bfa', '#818cf8']  # Градиент фиолетового
             )
             fig4.update_traces(marker=dict(line=dict(color='#0f172a', width=2)))
-            fig4.update_layout(paper_bgcolor='white')
+            fig4.update_layout(paper_bgcolor='#1e293b', font_color='#f8fafc')
             st.plotly_chart(fig4, use_container_width=True)
 
-        # Ряд графиков 3: Будущее ИИ (Широкий круговой график)
+        # Ряд графиков 3: Будущее ИИ (Яркий многоцветный пирог с темной подложкой)
         st.markdown(THICK_LINE, unsafe_allow_html=True)
         fig5 = px.pie(
             df, names="future_sphere",
             title="Какая сфера получит максимальный толчок развития от ИИ?",
-            color_discrete_sequence=['#f59e0b', '#3b82f6', '#ef4444', '#10b981', '#6366f1']
+            color_discrete_sequence=['#fbbf24', '#38bdf8', '#f87171', '#34d399', '#a78bfa']
         )
         fig5.update_traces(textposition='inside', textinfo='percent+label',
                            marker=dict(line=dict(color='#0f172a', width=2)))
-        fig5.update_layout(paper_bgcolor='white')
+        fig5.update_layout(paper_bgcolor='#1e293b', font_color='#f8fafc')
         st.plotly_chart(fig5, use_container_width=True)
