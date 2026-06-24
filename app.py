@@ -1,10 +1,13 @@
 import os
+import io  # Добавлено для работы с буфером памяти при экспорте в Excel
 from datetime import datetime
 import firebase_admin
 from firebase_admin import credentials, firestore
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+
+# --- Инициализация Firebase (Умная версия для Cloud и Локалки) ---
 import json  # <--- Добавь эту строку в самые верхние импорты, если её там нет!
 
 if not firebase_admin._apps:
@@ -166,7 +169,11 @@ elif mode == "Панель аналитики (Преподаватель)":
         st.info("В базе данных Firestore пока нет ответов.")
     else:
         df = pd.DataFrame(data)
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
+
+        # Обработка временной метки (удаляем часовой пояс для корректного экспорта в Excel)
+        df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_localize(None)
+
+        # Создаем датафрейм с русскими названиями колонок для выгрузки и таблицы
         df_russian = df.rename(columns=COLUMN_NAMES)
 
         st.subheader("Ключевые показатели эффективности")
@@ -182,20 +189,54 @@ elif mode == "Панель аналитики (Преподаватель)":
 
         st.markdown(THICK_LINE, unsafe_allow_html=True)
 
-        st.subheader("Сводная база данных")
+        # --- БЛОК ЭКСПОРТА ДАННЫХ ---
+        st.subheader("📥 Экспорт собранных данных")
+        exp_col1, exp_col2 = st.columns(2)
+
+        current_time = datetime.now().strftime("%Y%m%d_%H%M")
+
+        with exp_col1:
+            # Конвертация всей базы в CSV (в кодировке utf-8-sig, чтобы Excel читал русский язык без кракозябр)
+            csv_buffer = df_russian.to_csv(index=False).encode('utf-8-sig')
+            st.download_button(
+                label="🟢 Скачать базу в CSV формате",
+                data=csv_buffer,
+                file_name=f"survey_export_{current_time}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+
+        with exp_col2:
+            # Конвертация в Excel через байтовый буфер памяти
+            excel_buffer = io.BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                df_russian.to_excel(writer, index=False, sheet_name='Ответы респондентов')
+            excel_buffer.seek(0)
+
+            st.download_button(
+                label="🔵 Скачать базу в Excel (.xlsx)",
+                data=excel_buffer.getvalue(),
+                file_name=f"survey_export_{current_time}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
+        st.markdown(THICK_LINE, unsafe_allow_html=True)
+
+        st.subheader("Сводная база данных (Последние 10 ответов)")
         st.dataframe(df_russian.head(10), use_container_width=True)
 
         st.markdown(THICK_LINE, unsafe_allow_html=True)
         st.subheader("Визуальный анализ метрик")
 
-        # Ряд графиков 1: Неоновый Голубой и Неоновый Розовый на темном фоне
+        # Ряд графиков 1
         c1, c2 = st.columns(2)
         with c1:
             fig1 = px.histogram(
                 df, x="accuracy", nbins=10,
                 title="Распределение оценок точности ответов ИИ",
                 labels={"accuracy": "Оценка точности"},
-                color_discrete_sequence=['#38bdf8']  # Кибер-голубой
+                color_discrete_sequence=['#38bdf8']
             )
             fig1.update_traces(marker_line_color='#0f172a', marker_line_width=2)
             fig1.update_layout(
@@ -211,7 +252,7 @@ elif mode == "Панель аналитики (Преподаватель)":
                 df, x="convenience", nbins=10,
                 title="Распределение оценок юзабилити интерфейсов",
                 labels={"convenience": "Оценка удобства"},
-                color_discrete_sequence=['#f472b6']  # Неоново-розовый
+                color_discrete_sequence=['#f472b6']
             )
             fig2.update_traces(marker_line_color='#0f172a', marker_line_width=2)
             fig2.update_layout(
@@ -222,7 +263,7 @@ elif mode == "Панель аналитики (Преподаватель)":
             fig2.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#334155', linecolor='#f8fafc', linewidth=2)
             st.plotly_chart(fig2, use_container_width=True)
 
-        # Ряд графиков 2: Ярко-изумрудный бар-чарт и фиолетовый донат-чарт
+        # Ряд графиков 2
         st.markdown(THICK_LINE, unsafe_allow_html=True)
         c3, c4 = st.columns(2)
 
@@ -232,7 +273,7 @@ elif mode == "Панель аналитики (Преподаватель)":
                 x='productivity', y='count',
                 title="Как технологии влияют на продуктивность пользователей",
                 labels={'productivity': 'Категория влияния', 'count': 'Количество'},
-                color_discrete_sequence=['#34d399']  # Мятно-изумрудный
+                color_discrete_sequence=['#34d399']
             )
             fig3.update_traces(marker_line_color='#0f172a', marker_line_width=2)
             fig3.update_layout(plot_bgcolor='#1e293b', paper_bgcolor='#1e293b', font_color='#f8fafc')
@@ -245,13 +286,13 @@ elif mode == "Панель аналитики (Преподаватель)":
                 df, names="pay_ready",
                 title="Экономический аспект: Готовность платить за ИИ",
                 hole=0.4,
-                color_discrete_sequence=['#c084fc', '#a78bfa', '#818cf8']  # Градиент фиолетового
+                color_discrete_sequence=['#c084fc', '#a78bfa', '#818cf8']
             )
             fig4.update_traces(marker=dict(line=dict(color='#0f172a', width=2)))
             fig4.update_layout(paper_bgcolor='#1e293b', font_color='#f8fafc')
             st.plotly_chart(fig4, use_container_width=True)
 
-        # Ряд графиков 3: Будущее ИИ (Яркий многоцветный пирог с темной подложкой)
+        # Ряд графиков 3
         st.markdown(THICK_LINE, unsafe_allow_html=True)
         fig5 = px.pie(
             df, names="future_sphere",
