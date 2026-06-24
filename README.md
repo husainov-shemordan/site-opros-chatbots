@@ -50,8 +50,8 @@
 3. Скопируй туда данные из своего файла `serviceAccountKey.json`, переведя их в формат TOML вот так (просто заполни своими значениями вместо многоточий):
 
 ```toml
-[firebase_key]
-type = "service_account"
+[FIREBASE_KEY] = '''
+{type = "service_account"
 project_id = "твой-id-проекта"
 private_key_id = "..."
 private_key = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
@@ -61,7 +61,7 @@ auth_uri = "[https://accounts.google.com/o/oauth2/auth](https://accounts.google.
 token_uri = "[https://oauth2.googleapis.com/token](https://oauth2.googleapis.com/token)"
 auth_provider_x509_cert_url = "[https://www.googleapis.com/oauth2/v1/certs](https://www.googleapis.com/oauth2/v1/certs)"
 client_x509_cert_url = "..."
-universe_domain = "googleapis.com"
+universe_domain = "googleapis.com"}'''
 ```
 
 4. Нажми **Save**, и сайт в облаке заработает.
