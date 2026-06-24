@@ -7,12 +7,9 @@ from firebase_admin import credentials, firestore
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-
-# --- Инициализация Firebase (Умная версия для Cloud и Локалки) ---
-import json  # <--- Добавь эту строку в самые верхние импорты, если её там нет!
+import json
 
 if not firebase_admin._apps:
-    # 1. Пытаемся взять ключ из Secrets (для Streamlit Cloud)
     key_content = os.getenv("FIREBASE_KEY")
 
     if key_content:
@@ -34,7 +31,6 @@ if not firebase_admin._apps:
 db = firestore.client()
 st.set_page_config(page_title="Мониторинг: Чат-боты и ИИ", layout="wide")
 
-# --- БЛОК МАКСИМАЛЬНЫХ АНИМАЦИЙ (CSS) ---
 st.markdown("""
 <style>
     /* 1. Плавный 3D-въезд контента при смене вкладок */
@@ -135,7 +131,6 @@ THICK_LINE = "<hr style='border: 2px solid #6366f1; margin: 25px 0; opacity: 1;'
 # Оригинальное меню выбора режима
 mode = st.sidebar.radio("Выберите режим:", ["Заполнить опрос", "Панель аналитики (Преподаватель)"])
 
-# Маппинг всех 13 оригинальных полей
 COLUMN_NAMES = {
     "age": "Возраст",
     "occupation": "Род занятий",
@@ -386,7 +381,6 @@ elif mode == "Панель аналитики (Преподаватель)":
             fig4.update_layout(paper_bgcolor='#1e293b', font_color='#f8fafc')
             st.plotly_chart(fig4, use_container_width=True)
 
-        # Ряд оригинальных графиков 3
         st.markdown(THICK_LINE, unsafe_allow_html=True)
         fig5 = px.pie(
             df, names="future_sphere",
